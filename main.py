@@ -1,4 +1,11 @@
-import os, time
+import os, pycdlib, ast
+from pycdlib import pycdlibexception
+import configparser
+from tqdm import tqdm
+from glob import iglob
+from os.path import join, basename, splitext, exists
+
+CFG_PATH = './wim_exporter.cfg'
 
 def get_max_idx(src):
     cmd_find_max_idx = 'dism /get-wiminfo /wimfile:{} /english'.format(src)
@@ -66,9 +73,77 @@ def export(src, dst, idx=None):
 def wim2swm(src, dst, size=4095, chk_integrity=False):
     os.system('dism /split-image /imagefile:{} /swmfile:{} /filesize:{}{}'.format(src, dst, size, ' /checkintegrity' if chk_integrity else ''))
 
+def create_cfg(config):
+    config['DEFAULT'] = {
+        'cfg_version': '1.0',
+        'src_dir': 'iso',
+        'dest_dir': 'wim',
+        'target_filename': 'install',
+        'target_ext': 'wim',
+    }
+
+    config['Features'] = {
+        'extract_wim': '1',
+        'export_wim': '1',
+    }
+
+    config['Export'] = {
+        'export_criteria': '[]',
+    }
+
+    with open(CFG_PATH, 'w') as configfile:
+        config.write(configfile)
+    
+    return config
+
+
 if __name__ == '__main__':
 
-    wim2swm('all.wim', 'install.swm', chk_integrity=True)
+    '''
+    Check configuration file
+    '''
+    config = configparser.ConfigParser()
+    if exists(CFG_PATH):
+        config.read(CFG_PATH)
+    else:
+        config = create_cfg(config)
+    
+    if not config['DEFAULT']['cfg_version'] == '1.0':
+        raise NotImplementedError('Unknown version number.')
+    
+    target_filename = config['DEFAULT']['target_filename'] + '.' + config['DEFAULT']['target_ext']
+    
+
+    '''
+    Extract install.wim file from iso
+    '''
+    if int(config['Features']['extract_wim']):
+        iso = pycdlib.PyCdlib()
+        iso_paths = list(iglob(join(config['DEFAULT']['src_dir'], '**/*.iso'), recursive=True))
+
+        print('Extract install.wim file from iso...\n' + '='*80 + '\n')
+        for iso_path in tqdm(iso_paths, colour='green', desc='Extract install.wim from ISO'):
+            try:
+                iso.open(iso_path)
+                for dirname, dirlist, filelist in iso.walk(udf_path='/'):
+                    for filepath in filelist:
+                        if filepath == target_filename:
+                            os.makedirs(config['DEFAULT']['dest_dir'], exist_ok=True)
+                            dst_path = join(config['DEFAULT']['dest_dir'], splitext(basename(iso_path))[0] + '.' + config['DEFAULT']['target_ext'])
+                            iso.get_file_from_iso(udf_path='/'.join([dirname, filepath]), local_path=dst_path)
+                iso.close()
+            except pycdlibexception.PyCdlibException as e:
+                tqdm.write(str(e) + f': {iso_path}')
+
+    '''
+    Export wim-files to single wim file.
+    '''
+    if int(config['Features']['export_wim']):
+        criteria = ast.literal_eval(config['Export']['export_criteria'])
+        pass
+
+
+    # wim2swm('all.wim', 'install.swm', chk_integrity=True)
 
     # for i in range(1, 50):
         # desc("allinone.wim", idx=i)

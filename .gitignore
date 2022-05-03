@@ -1,3 +1,4 @@
 *.wim
 *.swm
 *.iso
+iso/*
