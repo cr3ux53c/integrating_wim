@@ -1,7 +1,5 @@
 from colorama import Fore, Style
-from cProfile import label
 import os, pycdlib, ast
-from shutil import ExecError
 from pycdlib import pycdlibexception
 import configparser
 from tqdm import tqdm
@@ -149,9 +147,19 @@ def create_cfg(config):
     
     return config
 
+from packaging.version import parse
+def sort_wim(x):
+    from packaging.version import parse
+    global sort_count, sort_keys
+    packed_return = []
 
-def sort_wim():
-    pass
+    for k, v in sort_criteria.items():
+        if len(v):
+            packed_return.append(sort_criteria[k].index(eval('x.' + k)))
+        else:
+            packed_return.append((parse(eval('x.' + k))))
+
+    return packed_return[0] if len(packed_return) == 1 else packed_return[0], *packed_return[1:]
 
 if __name__ == '__main__':
 
@@ -172,6 +180,7 @@ if __name__ == '__main__':
     src_dir = config['DEFAULT']['src_dir']
     dst_dir = config['DEFAULT']['dest_dir']
     sort_criteria = eval(config['Export']['sort_criteria'])
+    sort_count = -1
 
     '''
     Uncompress install.wim file from iso
@@ -210,8 +219,10 @@ if __name__ == '__main__':
         print()
 
         try:
-            wim_indexes = sorted(wim_indexes, key=lambda x: (sort_criteria['Edition'].index(x.Edition), sort_criteria['Architecture'].index(x.Architecture)))
-            wim_indexes = sorted(wim_indexes, key=lambda x: ([sort_criteria[k] for k, v in sort_criteria.items()]))
+            # wim_indexes = sorted(wim_indexes, key=lambda x: (sort_criteria['Edition'].index(x.Edition), sort_criteria['Architecture'].index(x.Architecture)))
+            # wim_indexes = sorted(wim_indexes, key=lambda x: (sort_criteria['Edition'].index(x.Edition)))
+            # sort_keys = sort_criteria.keys()
+            wim_indexes = sorted(wim_indexes, key=sort_wim)
         except ValueError as e:
             tqdm.write(f'{Fore.RED}{str(e)}{Style.RESET_ALL}')
         except Exception as e:

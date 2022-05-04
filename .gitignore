@@ -1,5 +1,6 @@
+venv/*
+*.pyc
 *.wim
 *.swm
 *.iso
 iso/*
-venv
