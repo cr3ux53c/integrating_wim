@@ -9,6 +9,14 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: main.py",
+            "type": "python",
+            "request": "launch",
+            "program": "main.py",
             "console": "integratedTerminal"
         }
     ]

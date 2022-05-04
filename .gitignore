@@ -2,3 +2,4 @@
 *.swm
 *.iso
 iso/*
+venv
