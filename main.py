@@ -100,8 +100,13 @@ if __name__ == '__main__':
     '''
     Load settings file
     '''
-    with open('settings.json') as f:
-        cfg = json.load(f)
+    try:
+        with open('settings.json') as f:
+            cfg = json.load(f)
+    except Exception as e:
+        print(f'{Fore.RED}Failed to access `settings.json` file.{Style.RESET_ALL}')
+        os.system('pause')
+        exit(1)
     if cfg['version'] != 1.0:
         raise NotImplementedError('Unknown version number.')
     
@@ -142,7 +147,7 @@ if __name__ == '__main__':
         except Exception as e:
             tqdm.write(f'{Fore.RED}{str(e)}{Style.RESET_ALL}')
             os.system('pause')
-            exit(0)
+            exit(1)
 
         print(f'Presorted WIM index sorted by {Fore.YELLOW}sort_criteria{Style.RESET_ALL} is as follows.')
         for idx, wim in enumerate(wim_indexes):
