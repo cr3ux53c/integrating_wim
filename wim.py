@@ -7,7 +7,7 @@ class WIM:
         return '{' + self.Name + ', ' + self.Architecture + ', ' + self.Languages + '}'
     
     def __str__(self) -> str:
-        return self.Name + ', ' + self.Architecture + ', ' + self.Languages
+        return self.Name + ', ' + self.Architecture + ', ' + self.Languages + ', ' + self.Version + ', ' + self.Modified + ' from ' + self.Details_for_image + ':' + self.Index
 
 if __name__ == '__main__':
     pass

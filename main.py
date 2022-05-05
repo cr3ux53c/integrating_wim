@@ -166,7 +166,7 @@ if __name__ == '__main__':
                             iso.get_file_from_iso(udf_path='/'.join([dirname, filepath]), local_path=dst_path)
                 iso.close()
             except pycdlibexception.PyCdlibException as e:
-                tqdm.write(str(e) + f': {iso_path}')
+                tqdm.write(f'{Fore.RED}{str(e)}: {iso_path}{Style.RESET_ALL}')
 
     '''
     Export wim-files to single wim file.
@@ -194,7 +194,7 @@ if __name__ == '__main__':
         # Export using DISM
         for wim in tqdm(wim_indexes, desc='Exporting WIM', colour='green', leave=False, dynamic_ncols=True):
             tqdm.write(f'{Fore.YELLOW}{wim}{Fore.WHITE} from {Fore.CYAN}{wim.Details_for_image}{Fore.WHITE}:{Fore.GREEN}{wim.Index}{Style.RESET_ALL}')
-            if purge_old_wim:
+            if purge_old_wim and exists(dest_wim_fname):
                 print(f'{Fore.YELLOW}Remove old wim: {Fore.RED}{dest_wim_fname}{Style.RESET_ALL}')
                 os.remove(dest_wim_fname)
             export(wim.Details_for_image, dest_wim_fname, range(1, 2), check_integrity=False)
