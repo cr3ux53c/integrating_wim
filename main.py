@@ -1,5 +1,5 @@
-import os, pycdlib, configparser
-from colorama import Fore, Style
+import os, pycdlib, json
+from colorama import Fore, Back, Style
 """
 Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
 Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
@@ -7,11 +7,10 @@ Style: DIM, NORMAL, BRIGHT, RESET_ALL
 """
 from pycdlib import pycdlibexception
 from tqdm import tqdm
+from math import ceil
 from glob import iglob
-from os.path import join, basename, splitext, exists
+from os.path import join, basename, splitext, exists, getsize
 from wim import WIM
-
-CFG_PATH = './wim_exporter.cfg'
 
 def print_wiminfo(wim_path, idx_range: range=None, category: list=None):
     if idx_range is None:
@@ -34,7 +33,7 @@ def get_wiminfo(wim_path, idx_range: range=None):
     if idx_range is None:
         idx_range = range(1, get_max_idx(wim_path)+1, 1)
 
-    for idx in tqdm(idx_range, 'Collecting WIM info', dynamic_ncols=True, colour='green', leave=False):
+    for idx in tqdm(idx_range, f'{Fore.YELLOW}Collecting WIM info{Style.RESET_ALL}', leave=False, colour='blue', dynamic_ncols=True):
         cmdline = f'dism /get-wiminfo /wimfile:{wim_path} /index:{idx} /english'
         cmd_output = os.popen(cmdline).readlines()
 
@@ -72,9 +71,9 @@ def sort_wim(x):
     from packaging.version import parse
     packed_return = []
 
-    for k, v in sort_criteria.items():
+    for k, v in cfg['sort_criteria'].items():
         if len(v):
-            packed_return.append(sort_criteria[k].index(eval('x.' + k)))
+            packed_return.append(cfg['sort_criteria'][k].index(eval('x.' + k)))
         else:
             packed_return.append((parse(eval('x.' + k))))
 
@@ -95,87 +94,48 @@ def export(src_path, dst_path, idx_range: range=None, compress: str=None, check_
 def wim2swm(src_path, dst_path, size=4095, check_integrity=False):
     os.system(f'dism /split-image /imagefile:{src_path} /swmfile:{dst_path} /filesize:{size}{" /checkintegrity" if check_integrity else ""}')
 
-def create_cfg(config):
-    config['DEFAULT'] = {
-        'cfg_version': '1.0',
-        'src_dir': 'iso',
-        'dest_dir': 'wim',
-        'target_filename': 'install',
-        'target_ext': 'wim',
-    }
-
-    config['Features'] = {
-        'extract_wim': '1',
-        'export_wim': '1',
-    }
-
-    config['Export'] = {
-        'export_criteria': '[]',
-    }
-
-    with open(CFG_PATH, 'w') as configfile:
-        config.write(configfile)
-    
-    return config
-
 
 if __name__ == '__main__':
 
     '''
-    Check configuration file
+    Load settings file
     '''
-    config = configparser.ConfigParser()
-    if exists(CFG_PATH):
-        config.read(CFG_PATH)
-    else:
-        config = create_cfg(config)
-    
-    if not config['DEFAULT']['cfg_version'] == '1.0':
+    with open('settings.json') as f:
+        cfg = json.load(f)
+    if cfg['version'] != 1.0:
         raise NotImplementedError('Unknown version number.')
     
-    target_ext = config['DEFAULT']['target_ext']
-    target_filename = config['DEFAULT']['target_filename'] + '.' + target_ext
-    src_dir = config['DEFAULT']['src_dir']
-    dst_dir = config['DEFAULT']['dest_dir']
-    sort_criteria = eval(config['Export']['sort_criteria'])
-    enable_pause = int(config['DEFAULT']['enable_pause'])
-    split_wim = int(config['Features']['split_wim'])
-    purge_old_wim = int(config['Export']['purge_old_wim'])
-    dest_wim_fname = config['Export']['dest_wim_fname']
-    dest_swm_fname = config['Export']['dest_swm_fname']
-    split_size = int(config['Export']['split_size'])
-    sort_count = -1
-
     '''
-    Uncompress install.wim file from iso
+    Extract install.wim file from iso
     '''
-    if int(config['Features']['uncompress_wim']):
+    if cfg['extract_iso']:
         iso = pycdlib.PyCdlib()
-        iso_paths = list(iglob(join(src_dir, '**/*.iso'), recursive=True))
-
-        print('\n\nUncompress install.wim file from iso...')
-        for iso_path in tqdm(iso_paths, colour='green', desc='Uncompress install.wim from ISO'):
-            tqdm.write(iso_path + '...')
-            try:
-                iso.open(iso_path)
-                for dirname, dirlist, filelist in iso.walk(udf_path='/'):
-                    for filepath in filelist:
-                        if filepath == target_filename:
-                            os.makedirs(dst_dir, exist_ok=True)
-                            dst_path = join(dst_dir, splitext(basename(iso_path))[0] + '.' + target_ext)
-                            iso.get_file_from_iso(udf_path='/'.join([dirname, filepath]), local_path=dst_path)
-                iso.close()
-            except pycdlibexception.PyCdlibException as e:
-                tqdm.write(f'{Fore.RED}{str(e)}: {iso_path}{Style.RESET_ALL}')
+        iso_paths = list(iglob(join(cfg['src_dir'], '**/*.iso'), recursive=True))
+        if not len(iso_paths):
+            print(f'{Fore.RED}Not found ISO files in {cfg["src_dir"]}{Style.RESET_ALL}')
+        else:
+            for iso_path in tqdm(iso_paths, desc=f'{Fore.YELLOW}Extract {cfg["target_wim"]} file from iso{Style.RESET_ALL}', leave=True, colour='green', dynamic_ncols=True):
+                tqdm.write(f'{iso_path}...')
+                try:
+                    iso.open(iso_path)
+                    for dirname, dirlist, filelist in iso.walk(udf_path='/'):
+                        for filepath in filelist:
+                            if filepath == cfg['target_wim']:
+                                os.makedirs(cfg['dst_dir'], exist_ok=True)
+                                iso.get_file_from_iso(udf_path='/'.join([dirname, filepath]), local_path=join(cfg['dst_dir'], splitext(basename(iso_path))[0] + splitext(cfg['target_wim'])[1]))
+                    iso.close()
+                except pycdlibexception.PyCdlibException as e:
+                    tqdm.write(f'{Fore.RED}{str(e)}: {iso_path}{Style.RESET_ALL}')
 
     '''
     Export wim-files to single wim file.
     '''
-
-    if int(config['Features']['export_wim']):
-        wim_paths = list(iglob(join(dst_dir, '*.' + target_ext)))
+    wim_paths = list(iglob(join(cfg['dst_dir'], '*' + splitext(cfg['target_wim'])[1])))
+    if not len(wim_paths):
+        print(f'{Fore.RED}Not found WIM files in {cfg["dst_dir"]}{Style.RESET_ALL}')
+    else:
         wim_indexes = []
-        for wim_path in tqdm(wim_paths, 'Opening WIM file', dynamic_ncols=True, colour='blue'):
+        for wim_path in tqdm(wim_paths, f'{Fore.YELLOW}Opening WIM file{Style.RESET_ALL}', dynamic_ncols=True, colour='green'):
             wim_indexes += get_wiminfo(wim_path)
         try:
             wim_indexes = sorted(wim_indexes, key=sort_wim)
@@ -184,21 +144,41 @@ if __name__ == '__main__':
             os.system('pause')
             exit(0)
 
-        # Summary sorted list
-        print('='*80)
+        print(f'Presorted WIM index sorted by {Fore.YELLOW}sort_criteria{Style.RESET_ALL} is as follows.')
         for idx, wim in enumerate(wim_indexes):
-            print(f'{Fore.CYAN if idx % 2 else Fore.GREEN}[{idx+1}]\t{wim}{Style.RESET_ALL}')
-        print('='*80, '\nThe sorted results are as above.')
-        if enable_pause: os.system('pause')
+            print(f'{Fore.CYAN if idx % 2 else Fore.GREEN}{Back.BLACK if idx % 2 else Back.BLACK}[{idx+1}]\t{wim}{Style.RESET_ALL}')
+        if cfg['enable_pause']: os.system('pause')
 
+        # Remove old WIM
+        if cfg['purge_old_wim'] and exists(cfg['dst_wim_path']):
+            print(f'{Fore.YELLOW}Remove old wim: {Fore.RED}{cfg["dst_wim_path"]}{Style.RESET_ALL}')
+            os.remove(cfg['dst_wim_path'])
+        
         # Export using DISM
-        for wim in tqdm(wim_indexes, desc='Exporting WIM', colour='green', leave=False, dynamic_ncols=True):
-            tqdm.write(f'{Fore.YELLOW}{wim}{Fore.WHITE} from {Fore.CYAN}{wim.Details_for_image}{Fore.WHITE}:{Fore.GREEN}{wim.Index}{Style.RESET_ALL}')
-            if purge_old_wim and exists(dest_wim_fname):
-                print(f'{Fore.YELLOW}Remove old wim: {Fore.RED}{dest_wim_fname}{Style.RESET_ALL}')
-                os.remove(dest_wim_fname)
-            export(wim.Details_for_image, dest_wim_fname, range(1, 2), check_integrity=False)
+        for wim in tqdm(wim_indexes, desc=f'{Fore.YELLOW}Exporting WIM{Style.RESET_ALL}', leave=True, colour='green', dynamic_ncols=True):
+            tqdm.write(f'\n{wim}\n')
+            export(wim.Details_for_image, cfg['dst_wim_path'], range(int(wim.Index), int(wim.Index)+1), check_integrity=False)
         
         # Split WIM to SWM using DISM
-        if split_wim:
-            wim2swm(dest_wim_fname, dest_swm_fname, split_size, check_integrity=False)
+        if cfg['split_wim']:
+            print(f'{Fore.YELLOW}Split WIM to SWM{Style.RESET_ALL}')
+            print(f'Convert {Fore.GREEN}{cfg["dst_wim_path"]}{Fore.WHITE}:{Fore.YELLOW}{getsize(cfg["dst_wim_path"])/1024**3:.02f}GB{Fore.WHITE} to {Style.RESET_ALL}', end='')
+            
+            wim_size = getsize(cfg['dst_wim_path'])
+            for i in range(1, ceil(wim_size/1024**2 / cfg['split_size'])+1):
+                wim_print_str = f'Convert {cfg["dst_wim_path"]}:{getsize(cfg["dst_wim_path"])/1024**3:.02f}GB to '
+                if i != 1:
+                    print(' '*(int(len(wim_print_str))), end='')
+                if wim_size/1024**2 >= (cfg['split_size']*i):
+                    remain_size = cfg['split_size']
+                else:
+                    remain_size = int((wim_size/1024**2) % cfg['split_size'])
+                print(f'{Fore.CYAN}{splitext(cfg["dst_swm_path"])[0]}{str(i) if i != 1 else ""}{splitext(cfg["dst_swm_path"])[1]}{Fore.WHITE}:{Fore.YELLOW}{remain_size}MB{Style.RESET_ALL}{" (Approx.)" if i == ceil(wim_size/1024**2 / cfg["split_size"]) else ""}')
+            if cfg['enable_pause']: os.system('pause')
+            if wim_size/1024**2 <= cfg['split_size']:
+                print(f'{Fore.RED}`split_size` must be larger than WIM filesize.{Style.RESET_ALL}')
+            else:
+                wim2swm(cfg['dst_wim_path'], cfg['dst_swm_path'], cfg['split_size'], check_integrity=False)
+
+        print('Converting is finished.')
+    os.system('pause')

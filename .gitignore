@@ -3,4 +3,7 @@ venv/*
 *.wim
 *.swm
 *.iso
-iso/*
+build
+dist
+*.spec
+*.exe
