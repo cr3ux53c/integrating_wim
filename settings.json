@@ -1,30 +1,28 @@
 {
     "version": 1.0,
-    "extract_iso": true,
-    "_extract_iso_help": "Directory to find ISO file.",
-    "src_dir": "iso",
-    "_src_dir_help": "Extract WIM from ISO file.",
+    "extract_iso": false,
+    "_extract_iso_help": "Extract WIM from ISO file.",
+    "src_dir": "D:\\os",
+    "_src_dir_help": "Directory to find ISO file.",
     "target_wim": "install.wim",
     "_target_wim_help": "Filename to find in ISO file.",
-    "dst_dir": "wim",
+    "dst_dir": "wim_ko",
     "_dst_dir_help": "Directory to save WIM extracted from ISO file.",
-    "dst_wim_path": "install.wim",
+    "export_wim": true,
+    "_export_wim_help": "Export WIM files to single WIM.",
+    "dst_wim_path": "install_ko-KR.wim",
     "_dst_wim_path": "Path to save WIM files exported with sorting.",
     "split_wim": true,
     "_split_wim_help": "Split WIM to SWM files to handle media and filesystem limitations",
     "split_size": 4095,
     "_split_size_help": "Size of each splited SWM file.",
-    "dst_swm_path": "install.swm",
+    "dst_swm_path": "iso_framework/sources/install_ko-KR.swm",
     "_dst_swm_path_help": "Path to save SWM splited from WIM.",
-    "enable_pause": true,
+    "enable_pause": false,
     "_enable_pause_help": "Pause before processing tasks.",
     "purge_old_wim": true,
     "_purge_old_wim_help": "Delete previously saved WIM file.",
     "sort_criteria": {
-        "Languages": [
-            "en-US (Default)",
-            "ko-KR (Default)"
-        ],
         "Installation": [
             "<undefined>",
             "Client",
@@ -35,8 +33,8 @@
         "Edition": [
             "<undefined>",
             "Starter",
-            "Home Basic",
-            "Home Premium",
+            "HomeBasic",
+            "HomePremium",
             "Core",
             "CoreN",
             "CoreSingleLanguage",
@@ -66,5 +64,13 @@
             "x64"
         ]
     },
-    "_sort_criteria_help": "Set sorting criteria based on WIM metadata. Criteria with empty values will be compared between objects by objects."
+    "_sort_criteria_help": "Set sorting criteria based on WIM metadata. Criteria with empty values will be compared between objects by objects.",
+
+    "src_iso_path": "D:\\os\\en-us_windows_10_business_editions_version_21h2_updated_april_2022_x64_dvd_38bad9d1.iso",
+    "oscdimg_path": "\"%PROGRAMFILES(x86)%\\Windows Kits\\10\\Assessment and Deployment Kit\\Deployment Tools\\x86\\Oscdimg\\oscdimg.exe\"",
+    "iso_dir": "framework",
+    "boot_platform": ["bios", "efi"],
+    "dst_iso_path": "\"HYUNSEOK BOOTUSB.iso\"",
+    "volume_label": "\"HYUNSEOK BOOTUSB\"",
+    "include_hidden_files": true
 }
