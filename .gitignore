@@ -2,6 +2,7 @@ venv/*
 *.pyc
 *.wim
 *.swm
+*.esd
 *.iso
 build
 dist

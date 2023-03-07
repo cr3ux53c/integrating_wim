@@ -162,7 +162,7 @@ if __name__ == '__main__':
         # Export using DISM
         for wim in tqdm(wim_indexes, desc=f'{Fore.YELLOW}Exporting WIM{Style.RESET_ALL}', leave=True, colour='green', dynamic_ncols=True):
             tqdm.write(f'\n{wim}\n')
-            export(wim.Details_for_image, cfg['dst_wim_path'], range(int(wim.Index), int(wim.Index)+1), check_integrity=False)
+            export(wim.Details_for_image, cfg['dst_wim_path'], range(int(wim.Index), int(wim.Index)+1), compress='recovery' if '.esd' in cfg['dst_wim_path'] else None, check_integrity=False)
         
         # Split WIM to SWM using DISM
         if cfg['split_wim']:
