@@ -57,7 +57,11 @@ def get_wiminfo(wim_path, idx_range: range=None):
             splited = [li.strip() for li in line.split(':', 1)]
             if len(splited) > 1:
                 output_dict[splited[0]] = splited[1]
-        wim_indexes.append(WIM(output_dict))
+        
+        if output_dict['Edition'] in cfg['sort_criteria']['Edition']:
+            wim_indexes.append(WIM(output_dict))
+        else:
+            tqdm.write(f'Skipped edition: {output_dict["Edition"]}')
     return wim_indexes
 
 def get_max_idx(wim_path):
@@ -121,16 +125,20 @@ if __name__ == '__main__':
         else:
             for iso_path in tqdm(iso_paths, desc=f'{Fore.YELLOW}Extract {cfg["target_wim"]} file from iso{Style.RESET_ALL}', leave=True, colour='green', dynamic_ncols=True):
                 tqdm.write(f'{iso_path}...')
-                try:
-                    iso.open(iso_path)
-                    for dirname, dirlist, filelist in iso.walk(udf_path='/'):
-                        for filepath in filelist:
-                            if filepath == cfg['target_wim']:
-                                os.makedirs(cfg['dst_dir'], exist_ok=True)
-                                iso.get_file_from_iso(udf_path='/'.join([dirname, filepath]), local_path=join(cfg['dst_dir'], splitext(basename(iso_path))[0] + splitext(cfg['target_wim'])[1]))
-                    iso.close()
-                except pycdlibexception.PyCdlibException as e:
-                    tqdm.write(f'{Fore.RED}{str(e)}: {iso_path}{Style.RESET_ALL}')
+                dst_wim_path = join(cfg['dst_dir'], splitext(basename(iso_path))[0] + splitext(cfg['target_wim'])[1])
+                if exists(dst_wim_path):
+                    tqdm.write(f'Already exists at {dst_wim_path}')
+                else:
+                    try:
+                        iso.open(iso_path)
+                        for dirname, dirlist, filelist in iso.walk(udf_path='/'):
+                            for filepath in filelist:
+                                if filepath == cfg['target_wim']:
+                                    os.makedirs(cfg['dst_dir'], exist_ok=True)
+                                    iso.get_file_from_iso(udf_path='/'.join([dirname, filepath]), local_path=dst_wim_path)
+                        iso.close()
+                    except pycdlibexception.PyCdlibException as e:
+                        tqdm.write(f'{Fore.RED}{str(e)}: {iso_path}{Style.RESET_ALL}')
 
     '''
     Export wim-files to single wim file.
