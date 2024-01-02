@@ -149,7 +149,15 @@ if __name__ == '__main__':
     else:
         wim_indexes = []
         for wim_path in tqdm(wim_paths, f'{Fore.YELLOW}Opening WIM file{Style.RESET_ALL}', dynamic_ncols=True, colour='green'):
-            wim_indexes += get_wiminfo(wim_path)
+            wiminfo = get_wiminfo(wim_path)
+
+            for winfo in wiminfo.copy():
+                for excl_crit in cfg['exclude_criteria']:
+                    if excl_crit['Filename'] in basename(wim_path) and winfo.Edition in excl_crit['Edition']:
+                        tqdm.write(f'Skipped excluded edition: {basename(wim_path)}: {winfo.Edition}')
+                        wiminfo.remove(winfo)
+
+            wim_indexes += wiminfo
         try:
             wim_indexes = sorted(wim_indexes, key=sort_wim)
         except Exception as e:
@@ -173,7 +181,7 @@ if __name__ == '__main__':
             export(wim.Details_for_image, cfg['dst_wim_path'], range(int(wim.Index), int(wim.Index)+1), compress='recovery' if '.esd' in cfg['dst_wim_path'] else None, check_integrity=False)
         
         # Split WIM to SWM using DISM
-        if cfg['split_wim']:
+        if cfg['split_wim'] and not '.esd' in cfg['dst_wim_path']:
             print(f'{Fore.YELLOW}Split WIM to SWM{Style.RESET_ALL}')
             print(f'Convert {Fore.GREEN}{cfg["dst_wim_path"]}{Fore.WHITE}:{Fore.YELLOW}{getsize(cfg["dst_wim_path"])/1024**3:.02f}GB{Fore.WHITE} to {Style.RESET_ALL}', end='')
             

@@ -2,13 +2,13 @@
     "version": 1.0,
     "extract_iso": true,
     "_extract_iso_help": "Directory to find ISO file.",
-    "src_dir": "iso",
+    "src_dir": "iso_en-US",
     "_src_dir_help": "Extract WIM from ISO file.",
     "target_wim": "install.wim",
     "_target_wim_help": "Filename to find in ISO file.",
-    "dst_dir": "wim",
+    "dst_dir": "wim_en-US",
     "_dst_dir_help": "Directory to save WIM extracted from ISO file.",
-    "dst_wim_path": "install-en_US.esd",
+    "dst_wim_path": "integ-en-US.esd",
     "_dst_wim_path": "Path to save WIM files exported with sorting.",
     "split_wim": false,
     "_split_wim_help": "Split WIM to SWM files to handle media and filesystem limitations",
@@ -16,14 +16,13 @@
     "_split_size_help": "Size of each splited SWM file.",
     "dst_swm_path": "install.swm",
     "_dst_swm_path_help": "Path to save SWM splited from WIM.",
-    "enable_pause": false,
+    "enable_pause": true,
     "_enable_pause_help": "Pause before processing tasks.",
     "purge_old_wim": true,
     "_purge_old_wim_help": "Delete previously saved WIM file.",
     "sort_criteria": {
         "Languages": [
-            "en-US (Default)",
-            "ko-KR (Default)"
+            "en-US (Default)"
         ],
         "Installation": [
             "<undefined>",
@@ -33,12 +32,38 @@
         ],
         "Version": [],
         "Edition": [
-            "Education"
+            "Core",
+            "CoreN",
+            "CoreSingleLanguage",
+            "Education",
+            "EducationN",
+            "Enterprise",
+            "EnterpriseN",
+            "Professional",
+            "ProfessionalN",
+            "ProfessionalEducation",
+            "ProfessionalEducationN",
+            "ProfessionalWorkstation",
+            "ProfessionalWorkstationN",
+            "ServerStandard",
+            "ServerStandard",
+            "ServerDatacenter",
+            "ServerDatacenter"
         ],
         "Architecture": [
             "x86",
             "x64"
         ]
     },
-    "_sort_criteria_help": "Set sorting criteria based on WIM metadata. Criteria with empty values will be compared between objects by objects."
+    "_sort_criteria_help": "Set sorting criteria based on WIM metadata. Criteria with empty values will be compared between objects by objects.",
+    "exclude_criteria": [
+        {
+            "Filename": "business_editions",
+            "Edition": ["Professional", "ProfessionalN"]
+        },
+        {
+            "Filename": "consumer_editions",
+            "Edition": ["Education", "EducationN", "ProfessionalEducation", "ProfessionalEducationN", "ProfessionalWorkstation", "ProfessionalWorkstationN"]
+        }
+    ]
 }
